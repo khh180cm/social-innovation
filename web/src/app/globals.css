@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --panel-2: #f5f6f8;
+  --line: #e2e5ea;
+  --line-soft: #eef0f3;
+  --ink: #1f2733;
+  --ink-dim: #5a6473;
+  --ink-faint: #8a93a2;
+  --primary: #2563eb;
+  --primary-soft: #eaf1ff;
+  --danger: #d23b3b;
+  --warn: #d77f2a;
+  --caution: #c79412;
+  --ok: #2a9d57;
+}
+
+@theme inline {
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic",
+    "Segoe UI", "Noto Sans KR", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--line);
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", "Consolas", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* primary 버튼/선택 상태 */
+.primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7ccd4;
+  border-radius: 6px;
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
