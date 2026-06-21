@@ -13,6 +13,8 @@ import {
   amountFor,
   TIER_LOWER_BOUNDS,
   TIER_LABELS,
+  TRACK_LABEL,
+  BLOCK_WEEKS,
 } from "./rules";
 import type { WeekRow } from "./data";
 
@@ -31,14 +33,6 @@ export const MOTIV_ORDER: MotivationStatus[] = [
   "on_track",
 ];
 
-export const MOTIV_BOOST: Record<MotivationStatus, number> = {
-  lost: 50,
-  push: 30,
-  coasting: 6,
-  ceiling: 0,
-  on_track: 0,
-};
-
 export interface TrackProjection {
   track: Track;
   status: MotivationStatus;
@@ -55,13 +49,7 @@ export interface Projection {
   status: MotivationStatus; // 종합 (가장 actionable)
   tracks: TrackProjection[];
   messages: string[];
-  boost: number;
 }
-
-const BLOCK_WEEKS: Record<1 | 2, number[]> = {
-  1: [1, 2, 3, 4],
-  2: [5, 6, 7, 8],
-};
 
 function attendedOf(w: WeekRow, track: Track) {
   return track === "job_training" ? w.jtAttended : w.weAttended;
@@ -85,7 +73,7 @@ function projectTrack(
   const tRem = remaining.reduce((s, w) => s + totalOf(w, track), 0);
   const T = tObs + tRem;
   const remDays = remaining.length;
-  const label = track === "job_training" ? "직무훈련" : "일경험";
+  const label = TRACK_LABEL[track];
 
   const observedRate = tObs > 0 ? aObs / tObs : 0; // 현재 출석 추세
   const bestRate = T > 0 ? (aObs + tRem) / T : 0; // 남은 일정 다 나오면
@@ -182,6 +170,5 @@ export function projectParticipant(
     status,
     tracks,
     messages,
-    boost: MOTIV_BOOST[status],
   };
 }

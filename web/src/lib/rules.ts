@@ -21,6 +21,12 @@ export const TIER_LABELS = ["90% 이상", "70~90%", "60~70%", "50~60%", "50% 미
 // 각 구간의 하한(좌폐). tierIndex 0..3 에 대응, 4(미지급)는 하한 없음.
 export const TIER_LOWER_BOUNDS = [0.9, 0.7, 0.6, 0.5];
 
+// 4주 정산 블록 (블록1=1~4주, 블록2=5~8주). 예측·전망·집계 공용 SSOT.
+export const BLOCK_WEEKS: Record<1 | 2, number[]> = {
+  1: [1, 2, 3, 4],
+  2: [5, 6, 7, 8],
+};
+
 /** 출석률(0..1) → 구간 인덱스(0=최고, 4=미지급) */
 export function tierIndex(rate: number): number {
   if (rate >= 0.9) return 0;

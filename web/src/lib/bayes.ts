@@ -6,14 +6,12 @@
 // - 할인(λ): 최근 주에 기하 가중(λ^k) → 5주차 regime shift / 하락 추세를 흡수.
 // - posterior → 최종 블록 출석률 예측분포 → 구간별 P(tier) → 기대수당·P(미지급)·신용구간.
 
-import { Track, tierIndex, amountFor } from "./rules";
+import { Track, tierIndex, amountFor, TIER_LOWER_BOUNDS, BLOCK_WEEKS } from "./rules";
 import type { WeekRow } from "./data";
 
 export const LAMBDA = 0.8; // 할인계수 (유효 기억 ≈ 1/(1-λ) ≈ 5주)
 const PRIOR_STRENGTH_CAP = 8; // 풀링 prior 최대 pseudo-week
 const PRIOR_STRENGTH_FLOOR = 2;
-
-const BLOCK_WEEKS: Record<1 | 2, number[]> = { 1: [1, 2, 3, 4], 2: [5, 6, 7, 8] };
 
 function att(w: WeekRow, t: Track) {
   return t === "job_training" ? w.jtAttended : w.weAttended;
@@ -208,13 +206,15 @@ export function forecastBlock(
     if (pt >= 1) return 0;
     return 1 - regIncBeta(pt, a, b);
   };
-  const g90 = pAtLeast(0.9);
-  const g70 = pAtLeast(0.7);
-  const g60 = pAtLeast(0.6);
-  const g50 = pAtLeast(0.5);
-  const pTier = [g90, g70 - g90, g60 - g70, g50 - g60, 1 - g50].map((x) =>
-    Math.max(0, x)
-  );
+  // 구간 하한(rules.TIER_LOWER_BOUNDS = [0.9,0.7,0.6,0.5])에서 P(최종률≥하한) 누적확률
+  const g = TIER_LOWER_BOUNDS.map(pAtLeast); // [g90, g70, g60, g50]
+  const pTier = [
+    g[0],
+    g[1] - g[0],
+    g[2] - g[1],
+    g[3] - g[2],
+    1 - g[3],
+  ].map((x) => Math.max(0, x));
   const expWage = pTier.reduce((s, p, i) => s + p * amountFor(track, i), 0);
 
   const rateOf = (p: number) => (obsAtt + p * remTotal) / blockTotal;

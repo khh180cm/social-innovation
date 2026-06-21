@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getData, getPrograms } from "@/lib/data";
-import { viewAsOf, Prior } from "@/lib/asof";
-import { cohortPrior } from "@/lib/bayes";
+import { viewAsOf, buildProgramPriors } from "@/lib/asof";
 import { weeklyFeedback } from "@/lib/multisource";
 import { projectParticipant } from "@/lib/projection";
 import type { Row } from "@/lib/row";
@@ -28,15 +27,13 @@ export default async function Home({
     ? participants.filter((p) => p.programName === selected)
     : participants;
 
-  const poolWeeks = pool.map((p) => p.weeks);
-  const prior: Prior = {
-    job_training: cohortPrior(poolWeeks, "job_training", uploaded),
-    work_experience: cohortPrior(poolWeeks, "work_experience", uploaded),
-  };
+  // prior는 선택 탭과 무관하게 항상 전체 참여자를 프로그램별 코호트로 산정한다.
+  // → 같은 참여자는 '전체' 탭에서도 프로그램 탭에서도 동일한 등급·예측·순위를 갖는다.
+  const priors = buildProgramPriors(participants, uploaded);
 
   const rows: Row[] = pool
     .map((p) => {
-      const view = viewAsOf(p.id, p.weeks, uploaded, prior);
+      const view = viewAsOf(p.id, p.weeks, uploaded, priors.get(p.programName)!);
       return {
         id: p.id,
         name: p.name,

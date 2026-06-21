@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getData } from "@/lib/data";
-import { viewAsOf, Prior } from "@/lib/asof";
-import { cohortPrior } from "@/lib/bayes";
+import { viewAsOf, buildProgramPriors } from "@/lib/asof";
 import { weeklyFeedback } from "@/lib/multisource";
 import { URGENCY_META, MOTIV_META } from "@/lib/ui";
+import type { Solution } from "@/lib/solutionTypes";
 
 export const runtime = "nodejs";
 
@@ -71,7 +71,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
   }
-  const uploaded = Math.min(8, Math.max(1, Number(body.uploaded ?? 3)));
+  const rawUploaded = Number(body.uploaded ?? 3);
+  const uploaded = Number.isFinite(rawUploaded)
+    ? Math.min(8, Math.max(1, Math.round(rawUploaded)))
+    : 3;
   const { participants } = getData();
   const p = participants.find((x) => x.id === Number(body.id));
   if (!p) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -83,14 +86,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const allWeeks = participants
-    .filter((x) => x.programName === p.programName)
-    .map((x) => x.weeks);
-  const prior: Prior = {
-    job_training: cohortPrior(allWeeks, "job_training", uploaded),
-    work_experience: cohortPrior(allWeeks, "work_experience", uploaded),
-  };
-  const view = viewAsOf(p.id, p.weeks, uploaded, prior);
+  // 보드와 동일 기준의 프로그램 코호트 prior (buildProgramPriors SSOT)
+  const priors = buildProgramPriors(participants, uploaded);
+  const view = viewAsOf(p.id, p.weeks, uploaded, priors.get(p.programName)!);
   const weekly = weeklyFeedback(p.id, p.weeks, uploaded);
 
   // 직전 주 조치 효과 프록시: 최근 주 vs 직전 주 출석 변화
@@ -147,7 +145,20 @@ ${weeklyText}
     if (!block || block.type !== "tool_use") {
       return NextResponse.json({ error: "no solution" }, { status: 502 });
     }
-    return NextResponse.json(block.input);
+    // 모델 응답이 계약(Solution)을 만족하는지 런타임 검증 — undefined 필드가 UI에 렌더되는 것 방지
+    const sol = block.input as Partial<Solution>;
+    if (
+      typeof sol?.diagnosis !== "string" ||
+      typeof sol?.effectReview !== "string" ||
+      typeof sol?.message !== "string" ||
+      !Array.isArray(sol?.actions)
+    ) {
+      return NextResponse.json(
+        { error: "invalid solution shape" },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json(sol);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "AI 호출 실패";
     return NextResponse.json({ error: msg }, { status: 502 });

@@ -1,6 +1,6 @@
 // as-of 인지 엔진 — 업로드된 N주만 관측, 나머지는 discounted Beta-Binomial 예측.
 
-import { Track, maxAmountFor } from "./rules";
+import { Track, maxAmountFor, BLOCK_WEEKS } from "./rules";
 import type { WeekRow } from "./data";
 import { projectParticipant } from "./projection";
 import type { MotivKey } from "./ui";
@@ -10,15 +10,50 @@ import {
   posterior,
   forecastBlock,
   trendOf,
+  cohortPrior,
 } from "./bayes";
 
 const TRACKS: Track[] = ["job_training", "work_experience"];
-const BLOCK_WEEKS: Record<1 | 2, number[]> = { 1: [1, 2, 3, 4], 2: [5, 6, 7, 8] };
 
 export type Prior = Record<Track, BetaPrior>;
 export type BlockState = "settled" | "progress" | "not_started";
 export type Urgency = 1 | 2 | 3 | 4;
 export type Trend = "up" | "flat" | "down";
+
+// 코호트 prior를 프로그램별로 1회 산정한다. 탭(전체/프로그램)·라우트 무관하게
+// 한 참여자는 항상 자기 프로그램 코호트 prior를 쓰므로 등급·순위가 화면에 따라 바뀌지 않는다.
+export function buildProgramPriors(
+  participants: { programName: string; weeks: WeekRow[] }[],
+  uploaded: number
+): Map<string, Prior> {
+  const groups = new Map<string, WeekRow[][]>();
+  for (const p of participants) {
+    const g = groups.get(p.programName) ?? [];
+    g.push(p.weeks);
+    groups.set(p.programName, g);
+  }
+  const priors = new Map<string, Prior>();
+  for (const [name, weeksList] of groups) {
+    priors.set(name, {
+      job_training: cohortPrior(weeksList, "job_training", uploaded),
+      work_experience: cohortPrior(weeksList, "work_experience", uploaded),
+    });
+  }
+  return priors;
+}
+
+// 긴급도 분류 — 위험(P미지급) 중심 + 추세·출석추정 보조. 임계값 SSOT.
+export function classifyUrgency(
+  pUnpaidNext: number,
+  postMean: number,
+  trend: Trend,
+  settledUnpaid: boolean
+): Urgency {
+  if (settledUnpaid || pUnpaidNext >= 0.5 || postMean < 0.5) return 1;
+  if (pUnpaidNext >= 0.2 || (trend === "down" && postMean < 0.75)) return 2;
+  if (pUnpaidNext >= 0.05 || trend === "down" || postMean < 0.72) return 3;
+  return 4;
+}
 
 export interface DisplayCell {
   track: Track;
@@ -136,14 +171,7 @@ export function viewAsOf(
     (posts.job_training.mean + posts.work_experience.mean) / 2;
   const trend = trendOf(weeks, uploaded);
 
-  // 긴급도 = 위험(P미지급) 중심 + 추세·출석추정 보조. 저위험은 '안정'이 기본.
-  let urgency: Urgency;
-  if (settledUnpaid || pUnpaidNext >= 0.5 || postMean < 0.5) urgency = 1;
-  else if (pUnpaidNext >= 0.2 || (trend === "down" && postMean < 0.75))
-    urgency = 2;
-  else if (pUnpaidNext >= 0.05 || trend === "down" || postMean < 0.72)
-    urgency = 3;
-  else urgency = 4;
+  const urgency = classifyUrgency(pUnpaidNext, postMean, trend, settledUnpaid);
 
   return {
     id,

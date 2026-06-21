@@ -1,12 +1,3 @@
-export type StatusKey = "critical" | "atrisk" | "watch" | "stable";
-
-export const STATUS_META: Record<StatusKey, { label: string; order: number }> = {
-  critical: { label: "긴급", order: 0 },
-  atrisk: { label: "위험", order: 1 },
-  watch: { label: "주의", order: 2 },
-  stable: { label: "안정", order: 3 },
-};
-
 // 긴급도 — 일반 관리 시스템 배지(연한 배경 + 진한 글자)
 export type Urgency = 1 | 2 | 3 | 4;
 
@@ -40,8 +31,4 @@ export function rateColor(rate: number): string {
   if (rate >= 0.6) return "#9a5614";
   if (rate >= 0.5) return "#a8521a";
   return "#b3261e";
-}
-
-export function severityColor(u: Urgency): string {
-  return URGENCY_META[u].color;
 }
