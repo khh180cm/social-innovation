@@ -1,6 +1,6 @@
 # 미래내일 일경험 운영 판단 도구
 
-미취업 청년 일경험 사업의 운영자가 참여자 300명의 상태를 매주 빠르게 보고 판단하도록 돕는 웹 도구. AX Arena 과제로 만든 프로토타입이다. 고용노동부·대한상공회의소 미래내일 일경험 사업을 대상으로 하고, 제공된 더미 데이터(`participants.csv`, 300명 × 8주)로 동작한다.
+[AX Arena](https://event-us.kr/axarena/event/125135) 해커톤에서 만든 프로토타입이다. 미취업 청년 일경험 사업의 운영자가 참여자 300명의 상태를 매주 빠르게 보고 판단하도록 돕는 웹 도구로, 고용노동부·대한상공회의소 미래내일 일경험 사업을 대상으로 한다. 제공된 더미 데이터(`context/participants.csv`, 300명 × 8주)로 동작한다.
 
 ## 무엇을 하나
 
@@ -23,7 +23,7 @@
 
 3단계 조치 추천에 Anthropic API 키가 필요하다.
 
-```
+```bash
 cd web
 npm install
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env.local
@@ -35,16 +35,29 @@ http://localhost:3000 에서 확인. 기술 스택은 Next.js 16, React 19, Type
 ## 구조
 
 ```
-participants.csv     제공 더미 데이터 (300명 × 8주)
-docs/                PRD · AI 활용 방법론 · 발표 자료(DECK.md, deck.html)
-web/src/lib/         예측 엔진(bayes, asof), 더미 피드백 생성, 분류 규칙
-web/src/components/   보드 · 12유형 매트릭스 · 상세 모달
-web/src/app/api/     조치 추천 API
+context/             제공 자료 — 과제 브리핑 슬라이드(01~06) + participants.csv
+docs/                기획·발표 자료 (아래 참조)
+web/
+  data/              앱이 읽는 참여자 CSV
+  src/lib/           예측 엔진(bayes·asof), 지급 규정(rules),
+                     더미 피드백 생성(multisource), 전망(projection)
+  src/components/    보드 · 12유형 매트릭스 · 상세 모달
+  src/app/api/       조치 추천 API (Anthropic)
 ```
+
+수치·분류 로직은 `web/src/lib`가 단일 책임으로 나눠 갖는다. 지급 구간·금액(`rules.ts`)과 정산 블록 경계(`BLOCK_WEEKS`)는 한 곳에서만 정의하고 나머지가 가져다 쓴다.
+
+## 발표 자료
+
+- `docs/발표자료.pdf` — 5장 슬라이드
+- `docs/DECK.md` — 슬라이드별 발표 대본(노트 포함)
+- `docs/deck.html` — reveal.js 슬라이드(`S` 키로 발표 노트)
+- `docs/PRD.md` — 제품 요구사항
+- `docs/AI_METHODOLOGY.md` — AI를 어떻게 활용했나(PRD·프로세스·규칙)
 
 ## 데이터
 
-`participants.csv` 컬럼:
+`context/participants.csv`(제공 원본)와 `web/data/participants.csv`(앱 사용본)는 동일하다. 컬럼:
 
 | 컬럼 | 설명 |
 |------|------|
