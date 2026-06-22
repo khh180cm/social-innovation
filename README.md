@@ -90,3 +90,13 @@ npm run dev
 ```
 
 Next.js 16 · React 19 · TypeScript · Tailwind · Anthropic SDK (`claude-opus-4-8`).
+
+## 발표 자료
+
+[AX Arena](https://event-us.kr/axarena/event/125135) 해커톤 발표·시연 자료다. `pictures/`에 있다.
+
+![발표 현장 — 과제 소개](pictures/발표-01-과제소개.jpg)
+
+- 발표 슬라이드(PDF): [소셜혁신연구소_고혁훈.pdf](<pictures/소셜혁신연구소_고혁훈.pdf>)
+- 시연 영상: [화면 기록 2026-06-20 시연.mov](<pictures/화면 기록 2026-06-20 시연.mov>)
+- 발표 현장 사진: 발표-01 ~ 발표-06 (`pictures/`)
